@@ -1579,7 +1579,7 @@ class SupabaseRestClient(context: Context) {
         return try {
             rpcObject("admin_set_shop_payment_lock", payload)
         } catch (error: Exception) {
-            val messages = generateSequence(error) { it.cause }
+            val messages = generateSequence<Throwable>(error) { it.cause }
                 .mapNotNull { it.message }
                 .toList()
             val missingRpc = (error is SupabaseApiException && error.statusCode == 404) ||

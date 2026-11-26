@@ -184,10 +184,7 @@ jobs:
             
             --notes "Automatically published from [main commit](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
             
-          gh release upload latest app/build/outputs/apk/debug/POS-app.apk --clobber
-          
-
-
+          gh release upload latest app/build/
 
 
 

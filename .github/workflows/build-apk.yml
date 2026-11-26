@@ -1,261 +1,94 @@
 name: Build Android APK
 
-
-
 on:
-
   push:
-  
     branches: [main]
-    
   workflow_dispatch:
-  
-
 
 jobs:
-
   build-apk:
-  
     # GitHub's ubuntu-24.04 hosted image is x86_64 (not ARM64).
-    
     runs-on: ubuntu-24.04
-    
     permissions:
-    
       contents: write
-      
-
 
     steps:
-    
       - name: Check out source
-      
         uses: actions/checkout@v4
-        
-
 
       - name: Ensure Gradle wrapper is executable
-      
         run: chmod +x gradlew
-        
-
 
       - name: Set up Java
-      
         uses: actions/setup-java@v4
-        
         with:
-        
           distribution: temurin
-          
           java-version: '21'
-          
           cache: gradle
-          
-
 
       - name: Set up Android SDK
-      
         uses: android-actions/setup-android@v4
-        
-
 
       - name: Install Android SDK packages
-      
         run: |
-        
           sdkmanager "platform-tools" "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0"
-          
           yes | sdkmanager --licenses >/dev/null || true
-          
-
 
       - name: Set debug build version
-      
         run: |
-        
           echo "VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-          
           echo "VERSION_NAME=0.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
-          
-
 
       - name: Compile Kotlin
-      
         run: ./gradlew :app:compileDebugKotlin -PversionCode="$VERSION_CODE" -PversionName="$VERSION_NAME" --no-daemon
-        
-
 
       - name: Build debug APK
-      
         run: ./gradlew :app:assembleDebug -PversionCode="$VERSION_CODE" -PversionName="$VERSION_NAME" --no-daemon
-        
-
 
       - name: Prefetch Robolectric Android 15 runtime
-      
         run: |
-        
           # Robolectric resolves android-all at test runtime instead of through Gradle.
-          
           # Seed its local Maven repository so tests do not depend on a second, flaky
-          
           # Maven Central download from inside the test JVM.
-          
           version="15-robolectric-13954326-i7"
-          
           base_url="https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/${version}"
-          
           local_dir="$HOME/.m2/repository/org/robolectric/android-all-instrumented/${version}"
-          
           mkdir -p "$local_dir"
-          
           for file in \
-          
             "android-all-instrumented-${version}.jar" \
-            
             "android-all-instrumented-${version}.pom" \
-            
             "android-all-instrumented-${version}.jar.sha512" \
-            
             "android-all-instrumented-${version}.pom.sha512"; do
-            
             curl --fail --silent --show-error --location \
-            
               --continue-at - --retry 5 --retry-all-errors --connect-timeout 20 --max-time 600 \
-              
               "${base_url}/${file}" --output "${local_dir}/${file}"
-              
           done
-          
-
 
       - name: Run unit tests
-      
         run: ./gradlew :app:testDebugUnitTest --no-daemon -Djava.net.preferIPv4Stack=true
-        
-
 
       - name: Name APK for latest release
-      
         run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/POS-app.apk
-        
-
 
       - name: Upload debug APK
-      
         uses: actions/upload-artifact@v4
-        
         with:
-        
           name: counter-pos-debug-apk
-          
           path: app/build/outputs/apk/debug/POS-app.apk
-          
           if-no-files-found: error
-          
           retention-days: 14
-          
-
 
       - name: Publish latest APK release
-      
         env:
-        
           GH_TOKEN: ${{ github.token }}
-          
         run: |
-        
           if ! gh release view latest >/dev/null 2>&1; then
-          
             gh release create latest \
-            
               --target "$GITHUB_SHA" \
-              
               --title "Latest Counter POS build" \
-              
               --notes "Automatically published from main commit $GITHUB_SHA."
-              
           fi
-          
           gh release edit latest \
-          
             --title "Latest Counter POS build ($VERSION_NAME)" \
-            
             --notes "Automatically published from [main commit](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
-            
-          gh release upload latest app/build/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          gh release upload latest app/build/outputs/apk/debug/POS-app.apk --clobber

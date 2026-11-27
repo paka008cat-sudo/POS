@@ -158,10 +158,8 @@ fun StaffManagementScreen(
     onClearEmployeeRecoveryPass: () -> Unit,
     onSaveEmployeeSchedule: (String, Int, String, String, Boolean) -> Unit,
     onSaveBusinessHours: (BusinessHours) -> Unit,
-    onScanWaiterCode: (String) -> Unit,
     onSelectEnrollStation: (String) -> Unit = {},
-    onIssueButcheryPass: (String) -> Unit = {},
-    onScanButcheryCode: (String) -> Unit = {}
+    onIssueButcheryPass: (String) -> Unit = {}
 ) {
     BackHandler(onBack = onClose)
 
@@ -364,13 +362,6 @@ fun StaffManagementScreen(
                             context.startActivity(
                                 Intent.createChooser(intent, if (isButchery) "Share Butchery Passkey" else "Share Waiter Passkey")
                             )
-                        },
-                        onScanCode = {
-                            if (selectedEnrollStation == "butchery") {
-                                onScanButcheryCode(butcheryStationName.trim())
-                            } else {
-                                onScanWaiterCode("cashier")
-                            }
                         }
                     )
                 }
@@ -538,8 +529,7 @@ private fun EnrollWaitersTabContent(
     onButcheryStationNameChange: (String) -> Unit,
     onIssuePasskey: () -> Unit,
     onCopy: (String) -> Unit,
-    onShare: (String, Boolean) -> Unit,
-    onScanCode: () -> Unit
+    onShare: (String, Boolean) -> Unit
 ) {
     val isButchery = selectedStation == "butchery"
     val displayedPasskey = if (isButchery) state.butcheryPasskey else state.employeePasskey
@@ -567,9 +557,9 @@ private fun EnrollWaitersTabContent(
                     )
                     Text(
                         text = if (isButchery) {
-                            "Issue a one-time Butchery passkey or scan a butchery phone"
+                            "Issue a one-time Butchery passkey and QR code"
                         } else {
-                            "Issue a one-time passkey or scan an employee phone"
+                            "Issue a one-time passkey and QR code"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -824,40 +814,6 @@ private fun EnrollWaitersTabContent(
                             }
                         }
                     }
-                }
-            }
-            // Scan a pending sign-in challenge on the second phone
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isButchery) "Butchery phone ready to sign in?" else "Employee ready to sign in?",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
-                    )
-                    Text(
-                        text = if (isButchery) {
-                            "Scan the QR on the butchery phone's sign-in screen to authorize it."
-                        } else {
-                            "Scan the QR on their sign-in screen to authorize this phone."
-                        },
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = onScanCode,
-                    enabled = ownerCanEdit,
-                    modifier = Modifier.testTag(if (isButchery) "scan_butchery_challenge_button" else "scan_waiter_challenge_button")
-                ) {
-                    Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Scan Phone")
                 }
             }
         }
